@@ -5378,7 +5378,10 @@ namespace
 
 				generated.layer.tex = scanout;
 				if ( generatedFrame.applyOutputColorMgmt && generatedFrame.outputEncodingEOTF == EOTF_Gamma22 )
+				{
 					generated.layer.colorspace = GAMESCOPE_APP_TEXTURE_COLORSPACE_SRGB;
+					generated.layer.outputColorMgmtApplied = true;
+				}
 				else if ( ColorspaceIsHDR( realLayer.colorspace ) )
 					generated.layer.colorspace = generatedFrame.outputEncodingEOTF == EOTF_PQ
 						? GAMESCOPE_APP_TEXTURE_COLORSPACE_HDR10_PQ
@@ -5476,7 +5479,10 @@ namespace
 					}
 					real.useFSR = false;
 					if ( realFrame.outputEncodingEOTF == EOTF_Gamma22 )
+					{
 						real.layer.colorspace = GAMESCOPE_APP_TEXTURE_COLORSPACE_SRGB;
+						real.layer.outputColorMgmtApplied = realFrame.applyOutputColorMgmt;
+					}
 					else if ( ColorspaceIsHDR( realLayer.colorspace ) )
 						real.layer.colorspace = realFrame.outputEncodingEOTF == EOTF_PQ
 							? GAMESCOPE_APP_TEXTURE_COLORSPACE_HDR10_PQ

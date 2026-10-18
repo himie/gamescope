@@ -333,6 +333,7 @@ struct FrameInfo_t
 
 		bool blackBorder;
 		bool applyColorMgmt; // drm only
+		bool outputColorMgmtApplied = false; // Skip LUTs when recompositing display-encoded output.
 
 		AlphaBlendingMode_t eAlphaBlendingMode = ALPHA_BLENDING_MODE_PREMULTIPLIED;
 
@@ -403,10 +404,16 @@ struct FrameInfo_t
 		return result;
 	}
 	uint32_t colorspaceMask() const {
+		static_assert( VKR_COLORSPACE_DISPLAY_NATIVE >= GamescopeAppTextureColorspace_Count );
+		static_assert( VKR_COLORSPACE_DISPLAY_NATIVE < ( 1u << GamescopeAppTextureColorspace_Bits ) );
 		uint32_t result = 0;
 		for (int i = 0; i < layerCount; i++)
 		{
-result |= layers[ i ].colorspace << (i * GamescopeAppTextureColorspace_Bits);
+			const uint32_t colorspace = layers[i].outputColorMgmtApplied &&
+				outputEncodingEOTF == EOTF_Gamma22 &&
+				layers[i].colorspace == GAMESCOPE_APP_TEXTURE_COLORSPACE_SRGB
+				? VKR_COLORSPACE_DISPLAY_NATIVE : uint32_t( layers[i].colorspace );
+			result |= colorspace << (i * GamescopeAppTextureColorspace_Bits);
 		}
 		return result;
 	}

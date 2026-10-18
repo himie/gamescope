@@ -76,7 +76,7 @@ void compositing_debug(uvec2 coord) {
 // ie. call colorspace_plane_degamma_tf(color.rgb, colorspace) before
 // input to this function.
 vec3 apply_layer_color_mgmt(vec3 color, uint layer, uint colorspace) {
-    if (colorspace == colorspace_passthru)
+    if (colorspace == colorspace_passthru || colorspace == colorspace_display_native)
         return color;
 
     if (c_itm_enable)

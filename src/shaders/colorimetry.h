@@ -338,6 +338,10 @@ vec3 colorspace_plane_degamma_tf(vec3 color, uint colorspace) {
         case colorspace_linear: // Using sRGB image view. Unlike DRM which doesn't get that liberty for scanout.
 		case colorspace_scRGB:
             return color;
+        case colorspace_display_native:
+            // The gamut and luminance mapping is already baked in. Decode only
+            // for blending; mura composition keeps display-encoded values.
+            return c_output_eotf == EOTF_Gamma22 ? srgbToLinear(color) : color;
 		case colorspace_sRGB:
 			return srgbToLinear(color);
 		case colorspace_pq:

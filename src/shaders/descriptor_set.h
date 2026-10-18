@@ -15,6 +15,7 @@ const int colorspace_sRGB = 1;
 const int colorspace_scRGB = 2;
 const int colorspace_pq = 3;
 const int colorspace_passthru = 4;
+const uint colorspace_display_native = VKR_COLORSPACE_DISPLAY_NATIVE;
 const int colorspace_max_bits = 3;
 
 const int filter_linear_emulated = 0;

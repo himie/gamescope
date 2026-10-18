@@ -11,4 +11,7 @@
 
 #define VKR_LUT3D_COUNT 2 // Must match EOTF_Count
 
+// Shader-only colorspace for a layer already converted to Gamma 2.2 output.
+#define VKR_COLORSPACE_DISPLAY_NATIVE 5u
+
 #endif
