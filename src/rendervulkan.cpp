@@ -4927,6 +4927,24 @@ namespace
 			format == VK_FORMAT_R16G16B16A16_SFLOAT;
 	}
 
+	static void FrameGenerationBindGamma22HdrLuts( FrameInfo_t &frameInfo )
+	{
+		if ( !frameInfo.applyOutputColorMgmt || frameInfo.outputEncodingEOTF != EOTF_Gamma22 ||
+			 !ColorspaceIsHDR( frameInfo.layers[0].colorspace ) )
+			return;
+
+		// scRGB is in units of 80 nits, not normalized display luminance. The
+		// HDR LUT maps it to the panel's brightness/gamut before gamma encoding;
+		// encoding scRGB directly clips everything above 80 nits in UNORM.
+		// paint_all binds these LUTs only after frame generation, so take them
+		// from the active color-management state here. Leave PQ output alone.
+		if ( g_ColorMgmtLuts[EOTF_PQ].HasLuts() )
+		{
+			frameInfo.shaperLut[EOTF_PQ] = g_ColorMgmtLuts[EOTF_PQ].vk_lut1d;
+			frameInfo.lut3D[EOTF_PQ] = g_ColorMgmtLuts[EOTF_PQ].vk_lut3d;
+		}
+	}
+
 	class VulkanFrameGenerationPacingContext
 	{
 	public:
@@ -5295,6 +5313,8 @@ namespace
 					generatedFrame.layers[0].blackBorder = false;
 				}
 
+				FrameGenerationBindGamma22HdrLuts( generatedFrame );
+
 				if ( !m_completionTimeline )
 					m_completionTimeline = gamescope::CTimeline::Create();
 				if ( !m_completionTimeline )
@@ -5428,6 +5448,8 @@ namespace
 						realFrame.layers[0].offset = { 0.0f, 0.0f };
 						realFrame.layers[0].blackBorder = false;
 					}
+
+					FrameGenerationBindGamma22HdrLuts( realFrame );
 
 					auto realCmdBuffer = g_device.commandBuffer();
 					const uint64_t realCompletionPoint = ++m_completionPoint;
