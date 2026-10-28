@@ -42,9 +42,8 @@ struct pipewire_buffer {
 		int fd;
 	} shm;
 
-	// The following fields are not thread-safe
-
-	// The PipeWire buffer, or nullptr if it's been destroyed.
+	// The PipeWire buffer, or nullptr if it's been destroyed. Published
+	// atomically so the compositor can detect stale buffers while painting.
 	std::atomic<struct pw_buffer *> buffer;
 	bool IsStale() const 
 	{
@@ -52,6 +51,7 @@ struct pipewire_buffer {
 	}
 	// We pass the buffer to the steamcompmgr thread for copying. This is set
 	// to true if the buffer is currently owned by the steamcompmgr thread.
+	// Protected by s_PipewireMutex in pipewire.cpp.
 	bool copying;
 };
 

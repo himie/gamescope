@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <atomic>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -20,6 +21,11 @@ static LogScope pwr_log("pipewire");
 
 static struct pipewire_state pipewire_state = { .stream_node_id = SPA_ID_INVALID };
 static int nudgePipe[2] = { -1, -1 };
+
+// Serialize stream callbacks with compositor-side dequeue and stale-buffer
+// destruction. The atomic handoff pointers do not protect pw_buffer::user_data
+// or the copying flag from a concurrent remove_buffer callback.
+static std::mutex s_PipewireMutex;
 
 // Pending buffer for PipeWire → steamcompmgr
 static std::atomic<struct pipewire_buffer *> out_buffer;
@@ -69,6 +75,7 @@ static void destroy_buffer(struct pipewire_buffer *buffer) {
 
 void pipewire_destroy_buffer(struct pipewire_buffer *buffer)
 {
+	std::lock_guard lock(s_PipewireMutex);
 	destroy_buffer(buffer);
 }
 
@@ -659,6 +666,8 @@ static void run_pipewire(struct pipewire_state *state)
 
 		assert(!(pollfds[EVENT_NUDGE].revents & POLLHUP));
 
+		std::lock_guard lock(s_PipewireMutex);
+
 		if (pollfds[EVENT_PIPEWIRE].revents & POLLIN) {
 			pw_loop_enter(state->loop);
 			ret = pw_loop_iterate(state->loop, -1);
@@ -675,7 +684,10 @@ static void run_pipewire(struct pipewire_state *state)
 	}
 
 	pwr_log.infof("exiting");
+	std::lock_guard lock(s_PipewireMutex);
+	state->streaming = false;
 	pw_stream_destroy(state->stream);
+	state->stream = nullptr;
 	pw_core_disconnect(state->core);
 	pw_context_destroy(state->context);
 	pw_loop_destroy(state->loop);
@@ -775,6 +787,7 @@ bool pipewire_is_streaming()
 
 struct pipewire_buffer *dequeue_pipewire_buffer(void)
 {
+	std::lock_guard lock(s_PipewireMutex);
 	struct pipewire_state *state = &pipewire_state;
 	if (state->streaming) {
 		request_buffer(state);
