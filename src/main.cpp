@@ -624,7 +624,7 @@ static bool IsInDebugSession()
 #endif
 
 bool steamMode = false;
-bool disableInternalPq = true;
+bool disableInternalPq = false;
 bool g_bLaunchMangoapp = false;
 
 static void UpdateCompatEnvVars()
