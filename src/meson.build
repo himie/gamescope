@@ -378,6 +378,11 @@ executable('gamescope_color_microbench', ['color_bench.cpp', 'color_helpers.cpp'
 
 executable('gamescope_color_tests', ['color_tests.cpp', 'color_helpers.cpp'], gamescope_core_src, gamescope_version, dependencies:[glm_dep, cap_dep])
 
+hdr_metadata_tests = executable('gamescope_hdr_metadata_tests', 'hdr_metadata_tests.cpp',
+  dependencies: [glm_dep, drm_dep, displayinfo_dep], cpp_args: ['-UNDEBUG'])
+test('hdr-metadata-edid', hdr_metadata_tests,
+  args: [meson.project_source_root() / 'tests/fixtures/sdc4501.edid'])
+
 executable('gamescopectl', ['Apps/gamescopectl.cpp'], gamescope_core_src, gamescope_version, protocols_client_src, dependencies: [dep_wayland, cap_dep], install:true )
 
 executable('gamescope-type', ['Apps/gamescope_type.c'], protocols_client_src, dependencies: [dep_wayland, cap_dep], install:true )

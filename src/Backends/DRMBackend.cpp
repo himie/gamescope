@@ -32,6 +32,7 @@
 #include "Utils/Defer.h"
 #include "drm_include.h"
 #include "edid.h"
+#include "hdr_metadata.h"
 #include "gamescope_shared.h"
 #include "gpuvis_trace_utils.h"
 #include "log.hpp"
@@ -2583,8 +2584,14 @@ namespace gamescope
 			hdr_output_metadata defaultHDRMetadata{};
 			hdr_metadata_infoframe *pInfoframe = &defaultHDRMetadata.hdmi_metadata_type1;
 
-			// The mastering display and content light levels describe the source, not
-			// this connector. Leave them zero (unknown) until the app supplies them.
+			// Keep unknown mastering data zero. Most sinks also accept unknown
+			// content light levels; feed back EDID only for panels that need it.
+			if ( NeedsEdidContentLightFeedback( *pProduct, GetScreenType() == GAMESCOPE_SCREEN_TYPE_INTERNAL ) )
+			{
+				PopulateHdrContentLightLevelsFromEdid( *pInfoframe, *di_info_get_hdr_static_metadata( pInfo ) );
+				drm_log.infof( "Using EDID content light levels for %s: MaxCLL %u, MaxFALL %u",
+				               m_Mutable.szName, pInfoframe->max_cll, pInfoframe->max_fall );
+			}
 			pInfoframe->eotf = HDMI_EOTF_ST2084;
 			pInfoframe->metadata_type = 0;
 
