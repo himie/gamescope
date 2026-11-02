@@ -1,14 +1,29 @@
 #!/bin/sh
 
 usage() {
-    echo "Usage: $0 [--appid ID] <host>"
+    echo "Usage: $0 [--jobs N] [--appid ID] <host>"
+    echo "       $0 [--jobs N] --build-only"
 }
 
 HOST=
 APPID=
+BUILD_ONLY=
+JOBS=2
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        --build-only)
+            BUILD_ONLY=1
+            shift
+            ;;
+        --jobs)
+            if [ "$#" -lt 2 ]; then
+                echo "--jobs requires a positive integer" >&2
+                exit 1
+            fi
+            JOBS=$2
+            shift 2
+            ;;
         --appid)
             if [ "$#" -lt 2 ]; then
                 echo "--appid requires a Steam application ID" >&2
@@ -39,10 +54,22 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-if [ -z "$HOST" ]; then
+if [ -z "$HOST" ] && [ -z "$BUILD_ONLY" ]; then
     usage >&2
     exit 1
 fi
+
+if [ -n "$HOST" ] && [ -n "$BUILD_ONLY" ]; then
+    echo "--build-only cannot be combined with a host" >&2
+    exit 1
+fi
+
+case "$JOBS" in
+    ""|0*|*[!0-9]*)
+        echo "--jobs requires a positive integer" >&2
+        exit 1
+        ;;
+esac
 
 case "$APPID" in
     "") ;;
@@ -57,7 +84,10 @@ RSYNC="rsync -rv --exclude .git --exclude venv --exclude __pycache__'"
 set -e
 
 meson build/ -Dforce_fallback_for=stb,libdisplay-info,libliftoff,wlroots,vkroots -Denable_openvr_support=false
-ninja -C build/
+ninja -C build/ -j "$JOBS"
+if [ -n "$BUILD_ONLY" ]; then
+    exit 0
+fi
 scp build/src/gamescope "${HOST}:gamescope"
 scp build/layer/libVkLayer_FROG_gamescope_wsi_x86_64.so "${HOST}:gamescope-wsi.so"
 
